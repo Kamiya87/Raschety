@@ -9,6 +9,11 @@ const UNITS = [
   { id: "almaty", name: "Алматы", group: "internal" },
   { id: "external", name: "Внешний отдел продаж", group: "external" }
 ];
+const LEADERS = [
+  { id: "north", units: ["astana1", "astana2", "astana3"], rate: 4 },
+  { id: "south", units: ["shymkent", "almaty"], rate: 4 },
+  { id: "senior", units: ["astana1", "astana2", "astana3", "shymkent", "almaty"], rate: 2 }
+];
 const UNIT_IDS = new Set(UNITS.map((unit) => unit.id));
 const yearInput = document.getElementById("year");
 const monthSelect = document.getElementById("month");
@@ -74,6 +79,36 @@ function percent(plan, actual) {
 function teamPremium(actual) {
   if (actual === undefined) return undefined;
   return actual * (actual > 10000000 ? 20 : 15) / 100;
+}
+
+function leaderSummary(leader) {
+  const months = monthsForPeriod("quarter");
+  let base = 0;
+  let filled = 0;
+  for (const unitId of leader.units) {
+    for (const month of months) {
+      const actual = amountsFor(selectedYear, month, unitId).actual;
+      if (actual !== undefined) {
+        base += actual;
+        filled++;
+      }
+    }
+  }
+  return {
+    base: filled ? base : undefined,
+    complete: filled === leader.units.length * months.length
+  };
+}
+
+function renderLeaders() {
+  document.getElementById("leaders-period").textContent = `${periodTitle("quarter")}, ${selectedYear}`;
+  for (const leader of LEADERS) {
+    const card = document.querySelector(`[data-leader="${leader.id}"]`);
+    const result = leaderSummary(leader);
+    card.querySelector("[data-value=base]").textContent = result.base === undefined ? "—" : money(result.base);
+    card.querySelector("[data-value=premium]").textContent = result.base === undefined ? "—" : money(result.base * leader.rate / 100);
+    card.querySelector(".leader-incomplete").hidden = result.complete;
+  }
 }
 
 function key(year, month) {
@@ -251,6 +286,7 @@ function updateAmount(unitId, input) {
   if (Object.keys(entries[period]).length === 0) delete entries[period];
   persist();
   renderSummary(input.closest(".card"), unitId);
+  if (unitId !== "external" && input.dataset.field === "actual") renderLeaders();
 }
 
 function render() {
@@ -265,6 +301,7 @@ function render() {
     }
     renderSummary(card, unit.id);
   }
+  renderLeaders();
 }
 
 function loadStored() {

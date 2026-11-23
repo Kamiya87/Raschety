@@ -60,6 +60,14 @@ h2 { margin: 0; font-size: 22px; }
 .anomaly { margin: 16px 0 0; padding: 12px 14px; border: 2px solid #d76b16; border-radius: 10px; background: #fff3e8; color: #713409; font-weight: 700; line-height: 1.4; }
 .anomaly[hidden] { display: none; }
 
+.leader-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.leader-card { min-width: 0; padding: 16px; border: 1px solid #dbe3ed; border-radius: 16px; background: #fff; box-shadow: 0 4px 18px #1723360a; }
+.leader-card h3 { margin: 0 0 8px; font-size: 18px; }
+.leader-card p { margin: 7px 0; overflow-wrap: anywhere; }
+.leader-card .leader-teams { color: #526174; font-size: 14px; }
+.leader-card .leader-premium { color: #7b1e3a; font-weight: 700; }
+.leader-card .leader-incomplete { font-size: 14px; }
+
 .backup { margin-top: 28px; padding: 20px; }
 .backup p { color: #526174; line-height: 1.5; }
 .backup-actions { display: flex; flex-wrap: wrap; gap: 10px; }
@@ -70,6 +78,7 @@ button.secondary:hover { background: #f9edf1; }
 
 @media (max-width: 800px) {
   .card-layout { grid-template-columns: 1fr; }
+  .leader-cards { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 600px) {
