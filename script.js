@@ -39,7 +39,8 @@ function validateBackup(value) {
       }
       clean[period][unitId] = Object.create(null);
       for (const [field, amount] of Object.entries(amounts)) {
-        if (!["plan", "actual"].includes(field) || !Number.isSafeInteger(amount) || amount < 0) {
+        if ((!["plan", "actual"].includes(field) && !(unitId === "external" && field === "expense")) ||
+            !Number.isSafeInteger(amount) || amount < 0) {
           throw new Error("В файле есть неверная сумма.");
         }
         clean[period][unitId][field] = amount;
@@ -87,19 +88,24 @@ function summary(unitId, kind) {
   const months = monthsForPeriod(kind);
   let plan = 0;
   let actual = 0;
+  let expense = 0;
   let planCount = 0;
   let actualCount = 0;
+  let expenseCount = 0;
   let completeCount = 0;
 
   for (const month of months) {
     const item = amountsFor(selectedYear, month, unitId);
     if (item.plan !== undefined) { plan += item.plan; planCount++; }
     if (item.actual !== undefined) { actual += item.actual; actualCount++; }
+    if (unitId === "external" && item.expense !== undefined) { expense += item.expense; expenseCount++; }
     if (item.plan !== undefined && item.actual !== undefined) completeCount++;
   }
   return {
     plan: planCount ? plan : undefined,
     actual: actualCount ? actual : undefined,
+    expense: expenseCount ? expense : undefined,
+    expenseComplete: expenseCount === months.length,
     complete: completeCount === months.length
   };
 }
@@ -117,8 +123,12 @@ function renderSummary(card, unitId) {
     section.querySelector("h4").textContent = periodTitle(kind);
     section.querySelector("[data-value=plan]").textContent = result.plan === undefined ? "—" : money(result.plan);
     section.querySelector("[data-value=actual]").textContent = result.actual === undefined ? "—" : money(result.actual);
+    if (unitId === "external" && kind === "quarter") {
+      section.querySelector("[data-value=expense]").textContent = result.expense === undefined ? "—" : money(result.expense);
+      section.querySelector(".expense-incomplete").hidden = result.expenseComplete;
+    }
     section.querySelector("[data-value=percent]").textContent = percent(result.plan, result.actual);
-    const incomplete = section.querySelector(".incomplete");
+    const incomplete = section.querySelector(".period-incomplete");
     incomplete.hidden = result.complete;
     incomplete.textContent = kind === "month" ? "Не все поля заполнены" : "Не все месяцы заполнены";
   }
@@ -144,13 +154,14 @@ function renderSummary(card, unitId) {
   }
 }
 
-function periodMarkup(kind) {
+function periodMarkup(kind, external) {
   return `<div class="period" data-period="${kind}">
     <h4></h4>
     <p>План: <strong data-value="plan">—</strong></p>
     <p>Факт: <strong data-value="actual">—</strong></p>
+    ${external && kind === "quarter" ? '<p>Расход: <strong data-value="expense">—</strong></p><p class="incomplete expense-incomplete">Не все расходы заполнены</p>' : ""}
     <p class="percent">Выполнение: <span data-value="percent">—</span></p>
-    <p class="incomplete"></p>
+    <p class="incomplete period-incomplete"></p>
   </div>`;
 }
 
@@ -169,8 +180,12 @@ function createCard(unit) {
           <span class="money-input"><input id="${unit.id}-actual" data-field="actual" type="text" inputmode="numeric" autocomplete="off" placeholder="0" aria-describedby="${unit.id}-actual-error"><span>₸</span></span>
           <span class="field-error" id="${unit.id}-actual-error"></span>
         </label>
+        ${unit.group === "external" ? `<label for="${unit.id}-expense">Расход за месяц
+          <span class="money-input"><input id="${unit.id}-expense" data-field="expense" type="text" inputmode="numeric" autocomplete="off" placeholder="0" aria-describedby="${unit.id}-expense-error"><span>₸</span></span>
+          <span class="field-error" id="${unit.id}-expense-error"></span>
+        </label>` : ""}
       </div>
-      <div class="periods">${["month", "quarter", "year"].map(periodMarkup).join("")}</div>
+      <div class="periods">${["month", "quarter", "year"].map((kind) => periodMarkup(kind, unit.group === "external")).join("")}</div>
     </div>
     <p class="anomaly" role="alert" hidden></p>`;
   card.querySelectorAll("input[data-field]").forEach((input) => {
@@ -231,7 +246,7 @@ function render() {
   for (const unit of UNITS) {
     const card = document.querySelector(`[data-unit="${unit.id}"]`);
     const item = amountsFor(selectedYear, selectedMonth, unit.id);
-    for (const field of ["plan", "actual"]) {
+    for (const field of unit.group === "external" ? ["plan", "actual", "expense"] : ["plan", "actual"]) {
       const input = card.querySelector(`[data-field="${field}"]`);
       input.value = inputAmount(item[field]);
       input.removeAttribute("aria-invalid");
