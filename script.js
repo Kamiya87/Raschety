@@ -56,7 +56,9 @@ function setStatus(message, error = false) {
 }
 
 function money(amount) {
-  return amount.toLocaleString("ru-RU").replace(/[\u00a0\u202f]/g, " ") + " ₸";
+  const digits = Number.isInteger(amount) ? 0 : 2;
+  return amount.toLocaleString("ru-RU", { minimumFractionDigits: digits, maximumFractionDigits: digits })
+    .replace(/[\u00a0\u202f]/g, " ") + " ₸";
 }
 
 function inputAmount(amount) {
@@ -67,6 +69,11 @@ function percent(plan, actual) {
   if (plan === undefined || actual === undefined || plan === 0) return "—";
   const value = (actual / plan) * 100;
   return value.toLocaleString("ru-RU", { maximumFractionDigits: 1 }) + "%";
+}
+
+function teamPremium(actual) {
+  if (actual === undefined) return undefined;
+  return actual * (actual > 10000000 ? 20 : 15) / 100;
 }
 
 function key(year, month) {
@@ -126,6 +133,9 @@ function renderSummary(card, unitId) {
     if (unitId === "external" && kind === "quarter") {
       section.querySelector("[data-value=expense]").textContent = result.expense === undefined ? "—" : money(result.expense);
       section.querySelector(".expense-incomplete").hidden = result.expenseComplete;
+    } else if (unitId !== "external" && kind === "quarter") {
+      const premium = teamPremium(result.actual);
+      section.querySelector("[data-value=premium]").textContent = premium === undefined ? "—" : money(premium);
     }
     section.querySelector("[data-value=percent]").textContent = percent(result.plan, result.actual);
     const incomplete = section.querySelector(".period-incomplete");
@@ -160,6 +170,7 @@ function periodMarkup(kind, external) {
     <p>План: <strong data-value="plan">—</strong></p>
     <p>Факт: <strong data-value="actual">—</strong></p>
     ${external && kind === "quarter" ? '<p>Расход: <strong data-value="expense">—</strong></p><p class="incomplete expense-incomplete">Не все расходы заполнены</p>' : ""}
+    ${!external && kind === "quarter" ? '<p class="premium">Премия: <strong data-value="premium">—</strong></p>' : ""}
     <p class="percent">Выполнение: <span data-value="percent">—</span></p>
     <p class="incomplete period-incomplete"></p>
   </div>`;
@@ -167,7 +178,7 @@ function periodMarkup(kind, external) {
 
 function createCard(unit) {
   const card = document.createElement("article");
-  card.className = "card";
+  card.className = unit.group === "internal" ? "card team-card" : "card";
   card.dataset.unit = unit.id;
   card.innerHTML = `<h3>${unit.name}</h3>
     <div class="card-layout">
