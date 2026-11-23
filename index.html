@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Отчётность по продажам</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <main class="container">
+    <header class="page-header">
+      <div>
+        <p class="eyebrow">Продажи</p>
+        <h1>Отчётность по продажам</h1>
+        <p class="intro">Введите план и факт за месяц. Итоги квартала и года пересчитаются автоматически.</p>
+      </div>
+    </header>
+
+    <section class="toolbar" aria-label="Выбор периода">
+      <label for="year">Год
+        <input id="year" type="number" min="2000" max="9999" step="1" inputmode="numeric">
+      </label>
+      <label for="month">Месяц
+        <select id="month">
+          <option value="1">Январь</option><option value="2">Февраль</option>
+          <option value="3">Март</option><option value="4">Апрель</option>
+          <option value="5">Май</option><option value="6">Июнь</option>
+          <option value="7">Июль</option><option value="8">Август</option>
+          <option value="9">Сентябрь</option><option value="10">Октябрь</option>
+          <option value="11">Ноябрь</option><option value="12">Декабрь</option>
+        </select>
+      </label>
+    </section>
+
+    <p id="status" class="status" role="status" aria-live="polite"></p>
+
+    <section aria-labelledby="internal-title">
+      <div class="section-heading">
+        <h2 id="internal-title">Внутренний отдел</h2>
+        <span>5 команд</span>
+      </div>
+      <div id="internal-cards" class="cards"></div>
+    </section>
+
+    <section aria-labelledby="external-title">
+      <div class="section-heading">
+        <h2 id="external-title">Внешний отдел продаж</h2>
+      </div>
+      <div id="external-cards" class="cards"></div>
+    </section>
+
+    <section class="backup" aria-labelledby="backup-title">
+      <h2 id="backup-title">Резервная копия</h2>
+      <p>Сохраните файл, чтобы восстановить данные после очистки браузера.</p>
+      <div class="backup-actions">
+        <button id="export" type="button">Выгрузить данные</button>
+        <button id="import-button" type="button" class="secondary">Загрузить данные</button>
+        <input id="import-file" type="file" accept=".json,application/json" hidden>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
