@@ -55,6 +55,7 @@
           <p>База: <strong data-value="base">—</strong></p>
           <p class="leader-premium">Премия 4%: <strong data-value="premium">—</strong></p>
           <p class="incomplete leader-incomplete" hidden>Не все месяцы заполнены</p>
+          <p class="anomaly premium-anomaly" role="alert" hidden></p>
         </article>
         <article class="leader-card" data-leader="south">
           <h3>Руководитель Юг</h3>
@@ -62,6 +63,7 @@
           <p>База: <strong data-value="base">—</strong></p>
           <p class="leader-premium">Премия 4%: <strong data-value="premium">—</strong></p>
           <p class="incomplete leader-incomplete" hidden>Не все месяцы заполнены</p>
+          <p class="anomaly premium-anomaly" role="alert" hidden></p>
         </article>
         <article class="leader-card" data-leader="senior">
           <h3>Старший руководитель</h3>
@@ -69,6 +71,7 @@
           <p>База: <strong data-value="base">—</strong></p>
           <p class="leader-premium">Премия 2%: <strong data-value="premium">—</strong></p>
           <p class="incomplete leader-incomplete" hidden>Не все месяцы заполнены</p>
+          <p class="anomaly premium-anomaly" role="alert" hidden></p>
         </article>
       </div>
     </section>
@@ -78,6 +81,24 @@
         <h2 id="external-title">Внешний отдел продаж</h2>
       </div>
       <div id="external-cards" class="cards"></div>
+    </section>
+
+    <section aria-labelledby="external-premium-title">
+      <div class="section-heading">
+        <h2 id="external-premium-title">Премия внешнего отдела</h2>
+        <span id="external-premium-period"></span>
+      </div>
+      <article id="external-premium-card" class="external-premium-card">
+        <dl class="calculation">
+          <div><dt>Доход</dt><dd data-value="income">—</dd></div>
+          <div><dt>НДС 16%</dt><dd data-value="vat">—</dd></div>
+          <div><dt>Расход</dt><dd data-value="expense">—</dd></div>
+          <div><dt>Итоговая сумма</dt><dd data-value="base">—</dd></div>
+          <div class="calculation-premium"><dt>Премия 10%</dt><dd data-value="premium">—</dd></div>
+        </dl>
+        <p class="incomplete external-incomplete" hidden></p>
+        <p class="anomaly premium-anomaly" role="alert" hidden></p>
+      </article>
     </section>
 
     <section class="backup" aria-labelledby="backup-title">

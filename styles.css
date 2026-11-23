@@ -68,6 +68,15 @@ h2 { margin: 0; font-size: 22px; }
 .leader-card .leader-premium { color: #7b1e3a; font-weight: 700; }
 .leader-card .leader-incomplete { font-size: 14px; }
 
+.external-premium-card { padding: 20px; border: 1px solid #dbe3ed; border-radius: 16px; background: #fff; box-shadow: 0 4px 18px #1723360a; }
+.calculation { margin: 0; }
+.calculation > div { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; padding: 9px 0; border-bottom: 1px solid #e0e0e4; }
+.calculation > div:last-child { border-bottom: 0; }
+.calculation dt { color: #526174; }
+.calculation dd { min-width: 0; margin: 0; text-align: right; overflow-wrap: anywhere; font-weight: 700; }
+.calculation .calculation-premium { color: #7b1e3a; font-size: 18px; }
+.calculation .calculation-premium dt { color: inherit; }
+
 .backup { margin-top: 28px; padding: 20px; }
 .backup p { color: #526174; line-height: 1.5; }
 .backup-actions { display: flex; flex-wrap: wrap; gap: 10px; }
@@ -83,7 +92,7 @@ button.secondary:hover { background: #f9edf1; }
 
 @media (max-width: 600px) {
   .container { padding: 20px 14px 48px; }
-  .toolbar, .card, .backup { padding: 16px; }
+  .toolbar, .card, .backup, .external-premium-card { padding: 16px; }
   .team-card { padding: 12px; }
   .team-card .entry-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .team-card .entry-fields label { min-width: 0; }

@@ -62,8 +62,9 @@ function setStatus(message, error = false) {
 
 function money(amount) {
   const digits = Number.isInteger(amount) ? 0 : 2;
-  return amount.toLocaleString("ru-RU", { minimumFractionDigits: digits, maximumFractionDigits: digits })
+  const formatted = Math.abs(amount).toLocaleString("ru-RU", { minimumFractionDigits: digits, maximumFractionDigits: digits })
     .replace(/[\u00a0\u202f]/g, " ") + " ₸";
+  return amount < 0 ? `−${formatted}` : formatted;
 }
 
 function inputAmount(amount) {
@@ -81,34 +82,104 @@ function teamPremium(actual) {
   return actual * (actual > 10000000 ? 20 : 15) / 100;
 }
 
-function leaderSummary(leader) {
-  const months = monthsForPeriod("quarter");
-  let base = 0;
+function quarterStart(month) {
+  return Math.floor((month - 1) / 3) * 3 + 1;
+}
+
+function previousQuarter() {
+  const firstMonth = quarterStart(selectedMonth);
+  return firstMonth === 1
+    ? { year: selectedYear - 1, firstMonth: 10 }
+    : { year: selectedYear, firstMonth: firstMonth - 3 };
+}
+
+function quarterSum(unitIds, field, year, firstMonth) {
+  let total = 0;
   let filled = 0;
-  for (const unitId of leader.units) {
-    for (const month of months) {
-      const actual = amountsFor(selectedYear, month, unitId).actual;
-      if (actual !== undefined) {
-        base += actual;
+  for (const unitId of unitIds) {
+    for (let month = firstMonth; month < firstMonth + 3; month++) {
+      const value = amountsFor(year, month, unitId)[field];
+      if (value !== undefined) {
+        total += value;
         filled++;
       }
     }
   }
+  return { total: filled ? total : undefined, complete: filled === unitIds.length * 3 };
+}
+
+function leaderSummary(leader) {
+  const result = quarterSum(leader.units, "actual", selectedYear, quarterStart(selectedMonth));
+  return { base: result.total, complete: result.complete };
+}
+
+function externalPremiumFor(year, firstMonth) {
+  const incomeResult = quarterSum(["external"], "actual", year, firstMonth);
+  const expenseResult = quarterSum(["external"], "expense", year, firstMonth);
+  const income = incomeResult.total;
+  const expense = expenseResult.total;
+  const vat = income === undefined ? undefined : income * 0.16;
+  const base = income === undefined || expense === undefined ? undefined : income - vat - expense;
   return {
-    base: filled ? base : undefined,
-    complete: filled === leader.units.length * months.length
+    income, vat, expense, base,
+    premium: base === undefined ? undefined : base * 0.10,
+    incomeComplete: incomeResult.complete,
+    expenseComplete: expenseResult.complete
   };
+}
+
+function premiumChangeExplanation(current, previous) {
+  if (current === undefined || previous === undefined) return "";
+  if (previous === 0 && current !== 0) return `Премия изменилась с ${money(previous)} до ${money(current)}.`;
+  if (previous > 0 && current >= previous * 2) return `Премия резко выросла: было ${money(previous)}, стало ${money(current)} (в 2 раза или больше).`;
+  if (previous > 0 && current <= previous / 2) return `Премия резко снизилась: было ${money(previous)}, стало ${money(current)} (в 2 раза или больше).`;
+  if (previous < 0 && current >= 0) return `Премия сменила знак: было ${money(previous)}, стало ${money(current)}.`;
+  if (previous < 0 && current < 0 && Math.abs(current) >= Math.abs(previous) * 2) return `Отрицательная премия выросла по модулю: было ${money(previous)}, стало ${money(current)} (в 2 раза или больше).`;
+  if (previous < 0 && current < 0 && Math.abs(current) <= Math.abs(previous) / 2) return `Отрицательная премия снизилась по модулю: было ${money(previous)}, стало ${money(current)} (в 2 раза или больше).`;
+  return "";
+}
+
+function showPremiumAnomaly(element, explanations) {
+  const message = explanations.filter(Boolean).join(" ");
+  element.hidden = !message;
+  element.textContent = message ? `Аномалия: ${message}` : "";
 }
 
 function renderLeaders() {
   document.getElementById("leaders-period").textContent = `${periodTitle("quarter")}, ${selectedYear}`;
+  const previous = previousQuarter();
   for (const leader of LEADERS) {
     const card = document.querySelector(`[data-leader="${leader.id}"]`);
     const result = leaderSummary(leader);
+    const currentPremium = result.base === undefined ? undefined : result.base * leader.rate / 100;
+    const previousBase = quarterSum(leader.units, "actual", previous.year, previous.firstMonth).total;
+    const previousPremium = previousBase === undefined ? undefined : previousBase * leader.rate / 100;
     card.querySelector("[data-value=base]").textContent = result.base === undefined ? "—" : money(result.base);
-    card.querySelector("[data-value=premium]").textContent = result.base === undefined ? "—" : money(result.base * leader.rate / 100);
+    card.querySelector("[data-value=premium]").textContent = currentPremium === undefined ? "—" : money(currentPremium);
     card.querySelector(".leader-incomplete").hidden = result.complete;
+    showPremiumAnomaly(card.querySelector(".premium-anomaly"), [premiumChangeExplanation(currentPremium, previousPremium)]);
   }
+}
+
+function renderExternalPremium() {
+  document.getElementById("external-premium-period").textContent = `${periodTitle("quarter")}, ${selectedYear}`;
+  const result = externalPremiumFor(selectedYear, quarterStart(selectedMonth));
+  const previous = previousQuarter();
+  const previousPremium = externalPremiumFor(previous.year, previous.firstMonth).premium;
+  const card = document.getElementById("external-premium-card");
+  for (const field of ["income", "vat", "expense", "base", "premium"]) {
+    card.querySelector(`[data-value=${field}]`).textContent = result[field] === undefined ? "—" : money(result[field]);
+  }
+  const missing = [];
+  if (!result.incomeComplete) missing.push("доход");
+  if (!result.expenseComplete) missing.push("расход");
+  const incomplete = card.querySelector(".external-incomplete");
+  incomplete.hidden = missing.length === 0;
+  incomplete.textContent = missing.length ? `Не все месяцы заполнены: ${missing.join(" и ")}.` : "";
+  const negative = result.base !== undefined && result.base < 0
+    ? `Отрицательная итоговая сумма: ${money(result.income)} − ${money(result.vat)} − ${money(result.expense)} = ${money(result.base)}; премия ${money(result.premium)}.`
+    : "";
+  showPremiumAnomaly(card.querySelector(".premium-anomaly"), [negative, premiumChangeExplanation(result.premium, previousPremium)]);
 }
 
 function key(year, month) {
@@ -197,6 +268,12 @@ function renderSummary(card, unitId) {
       anomaly.hidden = false;
     }
   }
+  if (unitId !== "external") {
+    const previous = previousQuarter();
+    const currentPremium = teamPremium(summary(unitId, "quarter").actual);
+    const previousPremium = teamPremium(quarterSum([unitId], "actual", previous.year, previous.firstMonth).total);
+    showPremiumAnomaly(card.querySelector(".premium-anomaly"), [premiumChangeExplanation(currentPremium, previousPremium)]);
+  }
 }
 
 function periodMarkup(kind, external) {
@@ -233,7 +310,8 @@ function createCard(unit) {
       </div>
       <div class="periods">${["month", "quarter", "year"].map((kind) => periodMarkup(kind, unit.group === "external")).join("")}</div>
     </div>
-    <p class="anomaly" role="alert" hidden></p>`;
+    <p class="anomaly" role="alert" hidden></p>
+    ${unit.group === "internal" ? '<p class="anomaly premium-anomaly" role="alert" hidden></p>' : ""}`;
   card.querySelectorAll("input[data-field]").forEach((input) => {
     input.addEventListener("input", () => updateAmount(unit.id, input));
     input.addEventListener("blur", () => {
@@ -287,6 +365,7 @@ function updateAmount(unitId, input) {
   persist();
   renderSummary(input.closest(".card"), unitId);
   if (unitId !== "external" && input.dataset.field === "actual") renderLeaders();
+  if (unitId === "external" && ["actual", "expense"].includes(input.dataset.field)) renderExternalPremium();
 }
 
 function render() {
@@ -302,6 +381,7 @@ function render() {
     renderSummary(card, unit.id);
   }
   renderLeaders();
+  renderExternalPremium();
 }
 
 function loadStored() {
