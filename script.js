@@ -12,6 +12,7 @@ const UNITS = [
 const LEADERS = [
   { id: "north", units: ["astana1", "astana2", "astana3"], rate: 4 },
   { id: "south", units: ["shymkent", "almaty"], rate: 4 },
+  { id: "shymkent", units: ["shymkent"], rate: 4 },
   { id: "senior", units: ["astana1", "astana2", "astana3", "shymkent", "almaty"], rate: 2 }
 ];
 const UNIT_IDS = new Set(UNITS.map((unit) => unit.id));
