@@ -18,6 +18,7 @@ const LEADERS = [
 ];
 const UNIT_IDS = new Set(UNITS.map((unit) => unit.id));
 const yearInput = document.getElementById("year");
+const quarterSelect = document.getElementById("quarter");
 const monthSelect = document.getElementById("month");
 const statusElement = document.getElementById("status");
 const today = new Date();
@@ -371,6 +372,8 @@ function updateAmount(unitId, input) {
 }
 
 function render() {
+  monthSelect.value = selectedMonth;
+  quarterSelect.value = Math.ceil(selectedMonth / 3);
   for (const unit of UNITS) {
     const card = document.querySelector(`[data-unit="${unit.id}"]`);
     const item = amountsFor(selectedYear, selectedMonth, unit.id);
@@ -428,7 +431,6 @@ for (const unit of UNITS) {
 loadStored();
 loadSelectedPeriod();
 yearInput.value = selectedYear;
-monthSelect.value = selectedMonth;
 render();
 
 yearInput.addEventListener("change", () => {
@@ -445,6 +447,12 @@ yearInput.addEventListener("change", () => {
 
 monthSelect.addEventListener("change", () => {
   selectedMonth = Number(monthSelect.value);
+  if (saveSelectedPeriod()) setStatus("");
+  render();
+});
+
+quarterSelect.addEventListener("change", () => {
+  selectedMonth = (Number(quarterSelect.value) - 1) * 3 + 1;
   if (saveSelectedPeriod()) setStatus("");
   render();
 });
