@@ -1,6 +1,7 @@
 "use strict";
 
 const STORAGE_KEY = "sales-report-v1";
+const PERIOD_KEY = "sales-report-period-v1";
 const UNITS = [
   { id: "astana1", name: "Астана1", group: "internal" },
   { id: "astana2", name: "Астана2", group: "internal" },
@@ -395,13 +396,39 @@ function loadStored() {
   }
 }
 
+function loadSelectedPeriod() {
+  try {
+    const raw = localStorage.getItem(PERIOD_KEY);
+    if (!raw) return;
+    const period = JSON.parse(raw);
+    if (Number.isInteger(period.year) && period.year >= 2000 && period.year <= 9999 &&
+        Number.isInteger(period.month) && period.month >= 1 && period.month <= 12) {
+      selectedYear = period.year;
+      selectedMonth = period.month;
+    }
+  } catch {
+    // Повреждённый сохранённый период не мешает открытию отчёта.
+  }
+}
+
+function saveSelectedPeriod() {
+  try {
+    localStorage.setItem(PERIOD_KEY, JSON.stringify({ year: selectedYear, month: selectedMonth }));
+    return true;
+  } catch {
+    setStatus("Не удалось сохранить выбранный период в браузере.", true);
+    return false;
+  }
+}
+
 for (const unit of UNITS) {
   const target = document.getElementById(unit.group === "internal" ? "internal-cards" : "external-cards");
   target.appendChild(createCard(unit));
 }
+loadStored();
+loadSelectedPeriod();
 yearInput.value = selectedYear;
 monthSelect.value = selectedMonth;
-loadStored();
 render();
 
 yearInput.addEventListener("change", () => {
@@ -412,13 +439,13 @@ yearInput.addEventListener("change", () => {
     return;
   }
   selectedYear = year;
-  setStatus("");
+  if (saveSelectedPeriod()) setStatus("");
   render();
 });
 
 monthSelect.addEventListener("change", () => {
   selectedMonth = Number(monthSelect.value);
-  setStatus("");
+  if (saveSelectedPeriod()) setStatus("");
   render();
 });
 
